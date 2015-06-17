@@ -12,7 +12,7 @@
   #(= += -= *= /= %= <<= >>= &= ^= |\|=| ? |:| |\|\|| && |\|| ^ & == != < > <= >= << >> ++ -- + - * / % ! ~ -> |.| |,|))
 
 (cl:defparameter vacietis::*possible-prefix-ops*
-  #(! ~ sizeof - + & * ++ --))
+  #(! ~ sizeof - + & * ++ --)) 
 
 (cl:defparameter vacietis::*ambiguous-ops*
   #(- + & *))
@@ -237,9 +237,17 @@
                   (elif nil)
                   (else (read-error "Misplaced #elif"))))))))
 
+(defmacro vacietis.c::defined (variable)
+  `(if (gethash ',variable
+                (compiler-state-pp *compiler-state*))
+       1
+       0))
+
 (defun preprocessor-test (line)
   (let ((exp (with-input-from-string (%in line)
-               (read-infix-exp (read-c-exp (next-char))))))
+               (let ((*possible-prefix-ops*
+                       (concatenate 'vector '(vacietis.c::defined) *possible-prefix-ops*)))
+                 (read-infix-exp (read-c-exp (next-char)))))))
     (not (eql 0 (eval `(symbol-macrolet
                            ,(let ((x))
                                  (maphash (lambda (k v)
@@ -247,6 +255,7 @@
                                           (compiler-state-pp *compiler-state*))
                                  x)
                          ,exp))))))
+
 
 (defun fill-in-template (args template subs)
   (ppcre:regex-replace-all
@@ -307,13 +316,8 @@
                (slurp-while (lambda (c) (char/= c delimiter)))))
          (next-char)
          (if (char= delimiter #\")
-             (%load-c-file (merge-pathnames
-                            include-file
-                            (directory-namestring
-                             (or *load-truename* *compile-file-truename*
-                                 *default-pathname-defaults*)))
-                           *compiler-state*)
-             (include-libc-file include-file))))
+             (include-file include-file :quote)
+             (include-file include-file :bracket))))
       (vacietis.c:if
        (push 'if preprocessor-if-stack)
        (unless (preprocessor-test (pp-read-line))
@@ -437,7 +441,7 @@
                             (if postfix?
                                 `(prog1 ,place ,set-exp)
                                 set-exp))))
-                       ((find x *possible-prefix-ops*)          ;; prefix op
+                       ((find x  *possible-prefix-ops*) ;; prefix op
                         (return-from parse-infix
                           (if (eq x 'vacietis.c:sizeof)
                               (let ((type-exp (aref exp (1+ i))))

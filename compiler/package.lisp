@@ -20,10 +20,12 @@
 
    ;; runtime
    #:*compiler-state*
+   #:*include-bracket-directories*
+   #:*include-quote-directories*
+   #:*include-disable-current-directory*
    #:make-compiler-state
    #:load-c-file
-   #:run-c-program
-   ))
+   #:run-c-program))
 
 (in-package #:vacietis)
 

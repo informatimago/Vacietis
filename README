@@ -28,8 +28,20 @@ C code can be read in the same way as regular Lisp code by using
 readtables:
 
 (let ((*readtable*               vacietis:c-readtable)
-      (vacietis:*compiler-state* (vacietis:make-compiler-state)))
+      (vacietis:*compiler-state* (vacietis:make-compiler-state))
+      (vacietis:*include-quote-directories*   '("/home/pjb/src/pgm/headers/"))
+      (vacietis:*include-bracket-directories* '("/home/pjb/src/pgm/include/" :libc)))
   (read <some stream>))
+
+#include "" and #include <> are searched in lists of directories
+specified in the variables: vacietis:*include-quote-directories* and
+vacietis:*include-bracket-directories*; the "current  directory" is
+searched unless vacietis:*include-disable-current-directory* is true.
+The search is performed in a way similar to gcc with its -I, -I-
+-iquote options.  gcc -nostdinc  can be implemented by removing :libc
+from *include-bracket-directories* and gcc -I- by moving :libc in the
+*include-bracket-directories* list.
+
 
 The Vacietis reader keeps track of type and preprocessor
 macro declarations in a compiler state object bound by
